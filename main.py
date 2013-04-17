@@ -34,7 +34,7 @@ class Engine(object):
         pygame.display.set_caption(self.config.title)
         self.timer = pygame.time.Clock()
         self.pointer = Pointer()
-        self.children = [Thing(40, 40), Thing(60, 20), Thing(60, 40), Thing(20, 50), Thing(90, 70), Thing(30, 70)]
+        self.objects = [Thing(40, 40), Thing(60, 20), Thing(60, 40), Thing(20, 50), Thing(90, 70), Thing(30, 70)]
 
     def start(self):
         self.run()
@@ -44,8 +44,17 @@ class Engine(object):
         while True:
             self.handle_events()
             self.update(delta)
+            if self.config.check_bounds:
+                self.check_bounds()
             self.draw()
             delta = self.timer.tick(self.config.framerate)
+
+    def check_bounds(self):
+        for o in self.objects:
+            in_screen = ((0 < o.position[0] < self.config.width), (0 < o.position[1] < self.config.height))
+            if False in in_screen:
+                print 'Removing out of bound object {0}'.format(o)
+                self.objects.remove(o)
 
     def handle_events(self):
         self.events = pygame.event.get()
@@ -56,13 +65,13 @@ class Engine(object):
                 handle_pointer(event, self.pointer)
 
     def update(self, delta):
-        for o in self.children:
+        for o in self.objects:
             o.update(delta)
 
     def draw(self):
         self.screen.fill((240,240,250))
         pygame.draw.rect(self.screen, theme.blue,  (10, 10, 10, 10))
-        for o in self.children:
+        for o in self.objects:
             o.draw(self.screen)
         pygame.display.update()
 
@@ -92,6 +101,9 @@ class Thing(object):
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, self.position, self.radius)
 
+    def __str__(self):
+        return 'Thing'
+
 
 
 
@@ -103,7 +115,7 @@ class Config(object):
         self.height = 360
         self.size = (self.width, self.height)
         self.framerate = 30
-
+        self.check_bounds = True
         
 if __name__ == '__main__':
     config = Config()
