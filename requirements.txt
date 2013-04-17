@@ -1,0 +1,7 @@
+PyOpenGL==3.0.2
+distribute==0.6.34
+ipython==0.13.1
+numpy==1.7.0
+paramiko==1.9.0
+pygame==1.9.1
+requests==1.1.0
