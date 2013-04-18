@@ -3,6 +3,7 @@ import theme
 from base import Thing
 import Queue
 import helpers
+import random
 
 class Bot(Thing):
 
@@ -42,7 +43,9 @@ class Home(object):
         return queue
 
     def _next_pos(self):
-        return (30, 200)
+        x = 10
+        y = int(random.random() * 360)
+        return (x, y)
 
     def _process_queue(self, delta):
         converted_delta = float(delta) / 1000.0
