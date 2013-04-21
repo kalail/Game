@@ -1,7 +1,11 @@
 
 
 class Thing(object):
+    """Thing
 
+    Base class for any unit with a poisition.
+    
+    """
     def __init__(self, position):
         self.position = position
 

@@ -4,28 +4,104 @@ from base import Thing
 import Queue
 import helpers
 import random
+import math
+
+
+class Pulse(Thing):
+    """Pulse
+
+    Shot by a pulse rilfe
+
+    """
+    def __init__(self, direction, color=theme.black, *args, **kwargs):
+        super(Pulse, self).__init__(*args, **kwargs)
+        self.length = 8
+        self.color = color
+        self.speed = 1200.0
+        self.direction = direction
+        self._length_half = self.length / 2.0
+
+    def update(self, delta, **kwargs):
+        dist = self.speed * delta
+        dist_x = self.direction[0] * dist
+        dist_y = self.direction[1] * dist
+        self.move(dist_x, dist_y)
+
+    def draw(self, screen):
+        line_start_x = self.position[0] - self.direction[0] * self.length
+        line_start_y = self.position[1] - self.direction[1] * self.length
+        line_end_x = self.position[0] + self.direction[0] * self.length
+        line_end_y = self.position[1] + self.direction[1] * self.length
+        pygame.draw.line(screen, self.color, (line_start_x, line_start_y), (line_end_x, line_end_y))
+
+    def __str__(self):
+        return 'Pulse'
+
 
 class Bot(Thing):
+    """Bot
 
+    Basic tier 1 unit.
+
+    """
     def __init__(self, color=theme.red, *args, **kwargs):
         super(Bot, self).__init__(*args, **kwargs)
-        self.radius = 5
+        self.radius = 6
         self.color = color
-        self.speed = 0.1
+        self.speed = 150.0
+        self.fire_rate = 1.0
+        self._fire_delay = 1.0 / self.fire_rate
+        self._fire_timer = 0.0
+        self._firing = False
+        # _random_aim = lambda: -30.0 + random.random()*60.0
+        # self.aim = None
 
-    def update(self, delta):
+    def _fire(self, position):
+        diff_x = position[0] - self.position[0]
+        diff_y = position[1] - self.position[1]
+        aim = (diff_x, diff_y)
+        m = (aim[0]**2 + aim[1]**2)**0.5
+        aim = (aim[0]/m, aim[1]/m)
+        return Pulse(direction=aim, position=self.position)
+
+    def fire(self, target):
+        if self._fire_timer >= self._fire_delay:
+            self._fire_timer = 0.0
+            return self._fire(target.position)
+
+    def check_for_targets(self, link):
+        return link.within_range(self)
+
+    def update(self, delta, **kwargs):
         dist = self.speed * delta
         self.move(dist, 0)
+        targets = self.check_for_targets(kwargs['command_link'])
+        if self._fire_timer < self._fire_delay:
+            self._fire_timer += delta
+        if targets:
+            target = random.choice(targets)
+            shot = self.fire(target)
+            if shot:
+                return [shot]
+        return []
+
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, self.position, self.radius)
+        if self._firing:
+            pygame.draw.circle(screen, theme.yellow, self.position, self.radius)
+            self._firing = False
 
     def __str__(self):
         return 'Bot'
 
 
 class Home(object):
+    """Home
 
+    Home base for a player that creates list of units periodically.
+
+    """
     def __init__(self, side='left', color=theme.red, rate=1, build_queue=[], *args, **kwargs):
         # super(Home, self).__init__(*args, **kwargs)
         self.side = side
@@ -48,8 +124,7 @@ class Home(object):
         return (x, y)
 
     def _process_queue(self, delta):
-        converted_delta = float(delta) / 1000.0
-        self._current_timer += converted_delta
+        self._current_timer += delta
         
         num_units = int(self._current_timer / self.target_period)
         if num_units > 0:
@@ -58,6 +133,8 @@ class Home(object):
 
     def _queue_get_new(self, num_units):
         pending = []
+        if num_units == 0:
+            return []
         for i in range(num_units):
             try:
                 unit_type = self.build_queue.get_nowait()
@@ -68,11 +145,9 @@ class Home(object):
             pending.append(unit)
         return pending
 
-    def update(self, delta):
+    def update(self, delta, **kwargs):
         num_units = self._process_queue(delta)
         new_units = self._queue_get_new(num_units)
-        if not isinstance(new_units, list):
-            new_units = [new_units]
         return new_units
 
     def draw(self, screen):
@@ -82,4 +157,4 @@ class Home(object):
             pygame.draw.rect(screen, self.color, (screen.get_width() - 20, 0, 20, screen.get_height()))
 
     def __str__(self):
-        return 'Bot'
+        return 'Home'
