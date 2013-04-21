@@ -8,6 +8,7 @@ import base
 import time
 import Queue
 import logging
+import random
 
 
 class Engine(object):
@@ -118,7 +119,9 @@ class Engine(object):
         pygame.display.update()
 
     def within_range(self, target):
-        return [base.Thing(position=(550, 300))]
+        x = 530 + random.random() * 40
+        y = 280 + random.random() * 40
+        return [base.Thing(position=(x, y))]
 
     def quit(self):
         pygame.quit()
