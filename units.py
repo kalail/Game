@@ -59,9 +59,7 @@ class Bot(Thing):
     def _fire(self, position):
         diff_x = position[0] - self.position[0]
         diff_y = position[1] - self.position[1]
-        aim = (diff_x, diff_y)
-        m = (aim[0]**2 + aim[1]**2)**0.5
-        aim = (aim[0]/m, aim[1]/m)
+        aim = helpers.normalize((diff_x, diff_y))
         return Pulse(direction=aim, position=self.position)
 
     def fire(self, target):
