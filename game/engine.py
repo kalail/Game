@@ -1,15 +1,16 @@
 import pygame
 import input_manager
 import units
+from units.base import Thing
 import pygame.locals as pylocals
 import theme
 import sys
-import base
 import time
 import Queue
 import logging
 import random
-
+from screen_manager import ScreenManager
+from object_manager import ObjectManager
 
 class Engine(object):
     """Engine
@@ -18,16 +19,25 @@ class Engine(object):
 
     """
     def __init__(self, config):
+        # Initialize
         pygame.init()
+        # Save config
         self.config = config
-        self.screen = pygame.display.set_mode(self.config.size)
+        # Create screen
+        self.screen_manager = ScreenManager(config.size, config.fullscreen)
+        self.screen = self.screen_manager.screen
+        # Set title
         pygame.display.set_caption(self.config.title)
+        # Set timeout
         self.timer = pygame.time.Clock()
         self.input_manager = input_manager.InputManager()
-        self.objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
+        # objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
+        objects = [units.Bot((10, i*30)) for i in xrange(100)]
+        self.object_manager = ObjectManager(objects)
         self._num_fps_avg = 5
         self._frame_times = Queue.Queue(self._num_fps_avg)
         [self._frame_times.put(0) for i in xrange(self._num_fps_avg)]
+        self.target = (500, 200)
 
     def start(self):
         self.run()
@@ -35,9 +45,9 @@ class Engine(object):
     def run(self):
         delta = 0
         while True:
+            # Handle events
             start = time.clock()
             first = start
-            # Handle events
             self.handle_events(delta)
             end = time.clock()
             logging.info('Handled events in: %ss' % (end - start))
@@ -48,7 +58,7 @@ class Engine(object):
             logging.info('Updated world in: %ss' % (end - start))
             # Create new objects
             start = time.clock()
-            self.objects.extend(new_objects)
+            self.object_manager.add(new_objects)
             end = time.clock()
             logging.info('Added %s new objects in: %ss' % (len(new_objects), (end-start)))
             # Run engine plugins
@@ -82,46 +92,46 @@ class Engine(object):
             logging.info('Estimated CPU Usage: %s%%' % (total/delta*100.0))
             logging.info('Estimated FPS: %s\n' % fps)
             logging.info('----------------------------------------------------------\n')
+
     def check_bounds(self):
-        count = 0
-        for o in self.objects:
-            if isinstance(o, base.Thing):
-                in_screen = ((0 < o.position[0] < self.config.width), (0 < o.position[1] < self.config.height))
-                if False in in_screen:
-                    self.objects.remove(o)
-                    count += 1
-        return count
+        pass
+        return 0
+        # count = 0
+        # for o in self.objects:
+        #     if isinstance(o, Thing):
+        #         in_screen = ((0 < o.position[0] < self.config.width), (0 < o.position[1] < self.config.height))
+        #         if False in in_screen:
+        #             self.objects.remove(o)
+        #             count += 1
+        # return count
 
     def handle_events(self, delta):
         self.events = pygame.event.get()
         for event in self.events:
             if event.type == pylocals.QUIT:
                 self.quit()
-            # else:
-                # interactions = self.input_manager.handle_input(event, delta)
-                # handle interactions
+            elif event.type == pylocals.KEYDOWN:
+               if event.key == pylocals.K_ESCAPE:
+                   self.quit()
+            else:
+                interactions = self.input_manager.handle_input(event, delta)
+                if interactions:
+                    for i in interactions:
+                        if i.name == 'drag':
+                            pass
+                        elif i.name == 'tap':
+                            self.target = (i.position[0], i.position[1])
+                            # self.input_manager.drags.extend(drags)
+                            pass
 
     def update(self, delta):
-        new_objects = []
-        for o in self.objects:
-            possible_objects = o.update(delta, command_link=self)
-            if possible_objects:
-                new_objects.append(possible_objects)
-        flat = []
-        [flat.extend(objects) for objects in new_objects]
-        return flat
+        new_objects = self.object_manager.update(delta)
+        return new_objects
 
     def draw(self):
         self.screen.fill(theme.white)
-        # pygame.draw.rect(self.screen, theme.blue,  (10, 10, 10, 10))
-        for o in self.objects:
-            o.draw(self.screen)
+        self.object_manager.draw(self.screen)
         pygame.display.update()
-
-    def within_range(self, target):
-        x = 530 + random.random() * 40
-        y = 280 + random.random() * 40
-        return [base.Thing(position=(x, y))]
 
     def quit(self):
         pygame.quit()

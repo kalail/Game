@@ -1,5 +1,4 @@
 
-
 class Config(object):
     """Config
 
@@ -7,10 +6,11 @@ class Config(object):
 
     """
     def __init__(self):
-        self.title = 'Hello World!'
+        self.title = 'Game'
         self.width = 640
         self.height = 360
         self.size = (self.width, self.height)
+        self.fullscreen = False
         self.framerate = 60
         self.check_bounds = True
         

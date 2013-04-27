@@ -1,10 +1,10 @@
 import pygame
 import theme
-from base import Thing
+from .base import Thing, GameObject
 import Queue
 import helpers
 import random
-import math
+import logging
 
 
 class Pulse(Thing):
@@ -38,18 +38,18 @@ class Pulse(Thing):
         return 'Pulse'
 
 
-class Bot(Thing):
+class Bot(GameObject):
     """Bot
 
     Basic tier 1 unit.
 
     """
-    def __init__(self, color=theme.red, *args, **kwargs):
-        super(Bot, self).__init__(*args, **kwargs)
-        self.radius = 6
-        self.color = color
+    def __init__(self, position):
+        super(Bot, self).__init__('assets/circle.png', position)
+        self.scale(20)
+        pygame.transform.scale
         self.speed = 150.0
-        self.fire_rate = 1.0
+        self.fire_rate = 3.0
         self._fire_delay = 1.0 / self.fire_rate
         self._fire_timer = 0.0
         self._firing = False
@@ -67,34 +67,25 @@ class Bot(Thing):
             self._fire_timer = 0.0
             return self._fire(target.position)
 
-    def check_for_targets(self, link):
-        return link.within_range(self)
 
     def update(self, delta, **kwargs):
         dist = self.speed * delta
         self.move(dist, 0)
-        targets = self.check_for_targets(kwargs['command_link'])
+        # targets = self.check_for_targets(kwargs['command_link'])
         if self._fire_timer < self._fire_delay:
             self._fire_timer += delta
-        if targets:
-            target = random.choice(targets)
-            shot = self.fire(target)
-            if shot:
-                return [shot]
+        # if targets:
+        #     target = random.choice(targets)
+        #     shot = self.fire(target)
+        #     if shot:
+        #         return [shot]
         return []
-
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, self.position, self.radius)
-        if self._firing:
-            pygame.draw.circle(screen, theme.yellow, self.position, self.radius)
-            self._firing = False
 
     def __str__(self):
         return 'Bot'
 
 
-class Home(object):
+class Home(GameObject):
     """Home
 
     Home base for a player that creates list of units periodically.
