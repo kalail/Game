@@ -13,7 +13,7 @@ class PygameAdapter(object):
         pygame.init()
         pygame.mouse.set_visible(0)
 
-    def create_surface(self, resolution, fullscreen, hardware=True, opengl=False, double_buffer=True):
+    def create_surface(self, resolution, fullscreen, hardware=False, opengl=False, double_buffer=True):
         flags = 0
         if fullscreen:
             flags |= pylocals.FULLSCREEN
@@ -26,6 +26,9 @@ class PygameAdapter(object):
         if not pygame.display.mode_ok(resolution, flags):
             logging.warning('Display mode not fully supported')
         return pygame.display.set_mode(resolution, flags)
+
+    def get_pointer_position(self):
+        return pygame.mouse.get_pos()
 
     def load_sound(self, asset):
         return pygame.mixer.Sound(asset)

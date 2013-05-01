@@ -38,6 +38,18 @@ class Pulse(Thing):
         return 'Pulse'
 
 
+class Pointer(GameObject):
+
+    def __init__(self, adapter, position=(0,0)):
+        super(Pointer, self).__init__('assets/cursor.png', position)
+        # self.scale(30)
+        self.adapter = adapter
+
+    def update(self, delta):
+        new_position = self.adapter.get_pointer_position()
+        self.move(new_position[0]-self.position[0], new_position[1]-self.position[1])
+        return []
+
 class Bot(GameObject):
     """Bot
 
@@ -46,9 +58,7 @@ class Bot(GameObject):
     """
     def __init__(self, position):
         super(Bot, self).__init__('assets/circle.png', position)
-        self.scale(20)
-        pygame.transform.scale
-        self.speed = 150.0
+        self.speed = 60.0
         self.fire_rate = 3.0
         self._fire_delay = 1.0 / self.fire_rate
         self._fire_timer = 0.0
@@ -62,10 +72,10 @@ class Bot(GameObject):
         aim = helpers.normalize((diff_x, diff_y))
         return Pulse(direction=aim, position=self.position)
 
-    def fire(self, target):
+    def fire(self, position):
         if self._fire_timer >= self._fire_delay:
             self._fire_timer = 0.0
-            return self._fire(target.position)
+            return self._fire(position)
 
 
     def update(self, delta, **kwargs):

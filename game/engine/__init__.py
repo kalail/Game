@@ -22,6 +22,7 @@ class Renderer(object):
         self.adapter.flip()
 
 
+
 class Engine(object):
     """Engine
 
@@ -39,7 +40,11 @@ class Engine(object):
         self.timer = self.adapter.get_clock()
         self.interaction_manager = InteractionManager()
         # objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
-        objects = [units.Bot((10, i*30)) for i in xrange(100)]
+        objects = [
+            units.Bot((25, 25)),
+            units.Bot((45, 25)),
+            units.Bot((25, 45)),
+        ]
         self.object_manager = ObjectManager(objects)
         self._num_fps_avg = 5
         self._frame_times = Queue.Queue(self._num_fps_avg)
@@ -50,6 +55,8 @@ class Engine(object):
         music = self.adapter.load_sound('assets/ThisUsedToBeACity.ogg')
         self.ping = self.adapter.load_sound('assets/ping.wav')
         music.play()
+        self.pointer = units.Pointer(self.adapter)
+        self.object_manager.add(self.pointer)
         self.run()
 
     def run(self):
