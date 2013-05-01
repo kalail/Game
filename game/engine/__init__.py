@@ -1,5 +1,5 @@
 import pygame
-import input_manager
+from .input_manager import InteractionManager
 import units
 from units.base import Thing
 import pygame.locals as pylocals
@@ -9,7 +9,6 @@ import time
 import Queue
 import logging
 import random
-from screen_manager import ScreenManager
 from object_manager import ObjectManager
 
 class Engine(object):
@@ -18,19 +17,16 @@ class Engine(object):
     Powers the game. Built on pygame.
 
     """
-    def __init__(self, config):
+    def __init__(self, config, adapter_class):
         # Initialize
-        pygame.init()
+        self.adapter = adapter_class()
         # Save config
         self.config = config
         # Create screen
-        self.screen_manager = ScreenManager(config.size, config.fullscreen)
-        self.screen = self.screen_manager.screen
-        # Set title
-        pygame.display.set_caption(self.config.title)
+        self.screen = self.adapter.create_screen(config.resolution, config.fullscreen)
         # Set timeout
         self.timer = pygame.time.Clock()
-        self.input_manager = input_manager.InputManager()
+        self.interaction_manager = InteractionManager()
         # objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
         objects = [units.Bot((10, i*30)) for i in xrange(100)]
         self.object_manager = ObjectManager(objects)
@@ -50,30 +46,30 @@ class Engine(object):
             first = start
             self.handle_events(delta)
             end = time.clock()
-            logging.info('Handled events in: %ss' % (end - start))
+            logging.debug('Handled events in: %ss' % (end - start))
             # Update world
             start = time.clock()
             new_objects = self.update(delta)
             end = time.clock()
-            logging.info('Updated world in: %ss' % (end - start))
+            logging.debug('Updated world in: %ss' % (end - start))
             # Create new objects
             start = time.clock()
             self.object_manager.add(new_objects)
             end = time.clock()
-            logging.info('Added %s new objects in: %ss' % (len(new_objects), (end-start)))
+            logging.debug('Added %s new objects in: %ss' % (len(new_objects), (end-start)))
             # Run engine plugins
             start = time.clock()
             if self.config.check_bounds:
                 num_culled = self.check_bounds()
-                logging.info('Culled %s out of bound objects' % num_culled)
+                logging.debug('Culled %s out of bound objects' % num_culled)
             end = time.clock()
-            logging.info('Ran engine plugins in: %ss' % (end - start))
+            logging.debug('Ran engine plugins in: %ss' % (end - start))
             # Draw objects
             start = time.clock()
             self.draw()
             end = time.clock()
             total = end - first
-            logging.info('Rendered frame in: %ss\n' % (end - start))
+            logging.debug('Rendered frame in: %ss\n' % (end - start))
             # Get ticks
             delta_millis = self.timer.tick(self.config.framerate)
             delta = float(delta_millis) / 1000.0
@@ -85,13 +81,13 @@ class Engine(object):
             times = [self._frame_times.get_nowait() for i in xrange(self._num_fps_avg)]
             [self._frame_times.put(t) for t in times]
             fps = 1.0 / (sum(times) / len(times))
-            logging.info('Total processing time: %ss' % total)
-            logging.info('Slept for: %ss' % slept)
-            logging.info('Total frame time: %ss\n' % delta)
+            logging.debug('Total processing time: %ss' % total)
+            logging.debug('Slept for: %ss' % slept)
+            logging.debug('Total frame time: %ss\n' % delta)
 
-            logging.info('Estimated CPU Usage: %s%%' % (total/delta*100.0))
-            logging.info('Estimated FPS: %s\n' % fps)
-            logging.info('----------------------------------------------------------\n')
+            logging.debug('Estimated CPU Usage: %s%%' % (total/delta*100.0))
+            logging.debug('Estimated FPS: %s\n' % fps)
+            logging.debug('----------------------------------------------------------\n')
 
     def check_bounds(self):
         pass
@@ -106,23 +102,14 @@ class Engine(object):
         # return count
 
     def handle_events(self, delta):
-        self.events = pygame.event.get()
-        for event in self.events:
+        events = pygame.event.get()
+        self.interaction_manager.update(events, delta)
+        for event in events:
             if event.type == pylocals.QUIT:
                 self.quit()
             elif event.type == pylocals.KEYDOWN:
                if event.key == pylocals.K_ESCAPE:
                    self.quit()
-            else:
-                interactions = self.input_manager.handle_input(event, delta)
-                if interactions:
-                    for i in interactions:
-                        if i.name == 'drag':
-                            pass
-                        elif i.name == 'tap':
-                            self.target = (i.position[0], i.position[1])
-                            # self.input_manager.drags.extend(drags)
-                            pass
 
     def update(self, delta):
         new_objects = self.object_manager.update(delta)
@@ -131,7 +118,13 @@ class Engine(object):
     def draw(self):
         self.screen.fill(theme.white)
         self.object_manager.draw(self.screen)
-        pygame.display.update()
+        if self.config.debug:
+            for i in self.interaction_manager.interactions[-3:]:
+                if len(i.points) > 1:
+                    pygame.draw.aalines(self.screen, (12,43,32), False, i.points)
+                    for p in i.points:
+                        pygame.draw.circle(self.screen, (10,50,10), p, 2)
+        pygame.display.flip()
 
     def quit(self):
         pygame.quit()

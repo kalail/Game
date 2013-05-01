@@ -9,8 +9,8 @@ class Config(object):
         self.title = 'Game'
         self.width = 640
         self.height = 360
-        self.size = (self.width, self.height)
+        self.resolution = (self.width, self.height)
         self.fullscreen = False
         self.framerate = 60
         self.check_bounds = True
-        
+        self.debug = True

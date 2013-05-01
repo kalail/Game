@@ -46,7 +46,7 @@ class GameObject(Sprite):
 
     def _load_image(self, img_file):
         try:
-            image = pygame.image.load(img_file)
+            image = pygame.image.load(img_file).convert_alpha()
         except pygame.error as error:
                 msg = 'Cannot load image: %s' % error
                 logging.error(msg)
