@@ -11,8 +11,9 @@ class PygameAdapter(object):
 
     def __init__(self):
         pygame.init()
+        pygame.mouse.set_visible(0)
 
-    def create_screen(self, resolution, fullscreen, hardware=True, opengl=False, double_buffer=True):
+    def create_surface(self, resolution, fullscreen, hardware=True, opengl=False, double_buffer=True):
         flags = 0
         if fullscreen:
             flags |= pylocals.FULLSCREEN
@@ -26,9 +27,17 @@ class PygameAdapter(object):
             logging.warning('Display mode not fully supported')
         return pygame.display.set_mode(resolution, flags)
 
-    def create_sound(size):
-        if size:
-            screen = pygame.display.set_mode(size, pylocals.FULLSCREEN)
-        else:
-            screen = pygame.display.set_mode(size)
-        return screen
+    def load_sound(self, asset):
+        return pygame.mixer.Sound(asset)
+
+    def get_clock(self):
+        return pygame.time.Clock()
+
+    def clear(self, screen, color):
+        screen.fill(color)
+
+    def flip(self):
+        pygame.display.flip()
+
+    def quit(self):
+        pygame.quit()

@@ -1,15 +1,26 @@
 import pygame
 from .input_manager import InteractionManager
 import units
-from units.base import Thing
 import pygame.locals as pylocals
 import theme
 import sys
 import time
 import Queue
 import logging
-import random
-from object_manager import ObjectManager
+from .object_manager import ObjectManager
+
+class Renderer(object):
+    def __init__(self, adapter, resolution, fullscreen, clear_color):
+        self.adapter = adapter
+        self.clear_color = clear_color
+        self.surface = adapter.create_surface(resolution, fullscreen)
+
+    def clear(self):
+        self.adapter.clear(self.surface, self.clear_color)
+
+    def flip(self):
+        self.adapter.flip()
+
 
 class Engine(object):
     """Engine
@@ -23,9 +34,9 @@ class Engine(object):
         # Save config
         self.config = config
         # Create screen
-        self.screen = self.adapter.create_screen(config.resolution, config.fullscreen)
+        self.renderer = Renderer(self.adapter, config.resolution, config.fullscreen, theme.white)
         # Set timeout
-        self.timer = pygame.time.Clock()
+        self.timer = self.adapter.get_clock()
         self.interaction_manager = InteractionManager()
         # objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
         objects = [units.Bot((10, i*30)) for i in xrange(100)]
@@ -36,6 +47,9 @@ class Engine(object):
         self.target = (500, 200)
 
     def start(self):
+        music = self.adapter.load_sound('assets/ThisUsedToBeACity.ogg')
+        self.ping = self.adapter.load_sound('assets/ping.wav')
+        music.play()
         self.run()
 
     def run(self):
@@ -110,22 +124,24 @@ class Engine(object):
             elif event.type == pylocals.KEYDOWN:
                if event.key == pylocals.K_ESCAPE:
                    self.quit()
+            elif event.type == pylocals.MOUSEBUTTONDOWN:
+                self.ping.play()
 
     def update(self, delta):
         new_objects = self.object_manager.update(delta)
         return new_objects
 
     def draw(self):
-        self.screen.fill(theme.white)
-        self.object_manager.draw(self.screen)
+        self.renderer.clear()
+        self.object_manager.draw(self.renderer.surface)
         if self.config.debug:
             for i in self.interaction_manager.interactions[-3:]:
                 if len(i.points) > 1:
-                    pygame.draw.aalines(self.screen, (12,43,32), False, i.points)
+                    pygame.draw.aalines(self.renderer.surface, (12,43,32), False, i.points)
                     for p in i.points:
-                        pygame.draw.circle(self.screen, (10,50,10), p, 2)
-        pygame.display.flip()
+                        pygame.draw.circle(self.renderer.surface, (10,50,10), p, 2)
+        self.renderer.flip()
 
     def quit(self):
-        pygame.quit()
+        self.adapter.quit()
         sys.exit()
