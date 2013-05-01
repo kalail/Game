@@ -3,6 +3,8 @@ import engine
 import engine.adapters
 import logging
 
+import cProfile
+
 
 def main():
     # Setup simple logging
@@ -20,4 +22,4 @@ def main():
     e.start()
 
 if __name__ == '__main__':
-    main()
+    cProfile.run('main()')
