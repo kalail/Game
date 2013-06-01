@@ -16,7 +16,7 @@ def init():
     pygame.init()
     pygame.mouse.set_visible(0)
 
-def create_surface(resolution, fullscreen, hardware=False, opengl=True, double_buffer=True):
+def create_surface(resolution, fullscreen, hardware=True, opengl=True, double_buffer=True):
     flags = 0
     if fullscreen:
         flags |= pylocals.FULLSCREEN
