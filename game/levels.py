@@ -21,7 +21,7 @@ class TestLevel(object):
 
     def starting_order(self):
         starting_units = [
-            # BuildOrder(units.Test, position=(80, 120)),
+            BuildOrder(units.Test, position=(0, 0)),
             # BuildOrder(units.Bullet, position=(80, 120), target=(300, 300)),
 
         ]

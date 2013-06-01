@@ -8,7 +8,7 @@ import time
 import Queue
 import logging
 import PAL
-from .managers import InteractionManager, ObjectManager, AssetManager, EventManager, EntityManager
+from .managers import InteractionManager, AssetManager, EventManager, EntityManager
 
 from .renderer import OpenGLRenderer as Renderer
 
@@ -41,7 +41,6 @@ class Engine(object):
         # Set timeout
         self.timer = PAL.get_clock()
         # objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
-        self.object_manager = ObjectManager()
         self.entity_manager = EntityManager()
         self.interaction_manager = InteractionManager()
         self.asset_manager = AssetManager(self.level.assets)
@@ -64,11 +63,11 @@ class Engine(object):
         # for a in asset
         # self.assets.
         self.asset_manager.load()
+        self.renderer.start()
         music = self.asset_manager.get('assets/ThisUsedToBeACity.ogg')
         self.ping = self.asset_manager.get('assets/beep.ogg')
         music.play()
         self.pointer = Pointer()
-        self.object_manager.add_multiple(self.level.start())
         self.entity_manager.build_multiple(self.level.starting_order())
         self.run()
 
@@ -83,18 +82,17 @@ class Engine(object):
             # logging.debug('Handled events in: %ss' % (end - start))
             # Update world
             # start = time.clock()
-            new_objects = self.update(delta)
+            self.update(delta)
             # end = time.clock()
             # logging.debug('Updated world in: %ss' % (end - start))
             # Create new objects
             # start = time.clock()
-            self.object_manager.add(new_objects)
             # end = time.clock()
             # logging.debug('Added %s new objects in: %ss' % (len(new_objects), (end-start)))
             # Run engine plugins
             # start = time.clock()
             if self.config.check_bounds:
-                num_culled = self.check_bounds()
+                self.check_bounds()
                 # print 'Culled %s out of bound objects' % num_culled
             # end = time.clock()
             # logging.debug('Ran engine plugins in: %ss' % (end - start))
@@ -124,14 +122,11 @@ class Engine(object):
             # logging.debug('----------------------------------------------------------\n')
 
     def check_bounds(self):
-        count = 0
         for e in self.entity_manager.entities:
             if isinstance(e, components.Movable):
-                in_screen = ((0 < e.position[0] < self.config.width), (0 < e.position[1] < self.config.height))
+                in_screen = ((0 < e.position[0] < self.renderer.width), (0 < e.position[1] < self.renderer.height))
                 if False in in_screen:
                     self.entity_manager.remove(e)
-                    count += 1
-        return count
 
     def handle_events(self, delta):
         events = self.event_manager.get()
@@ -146,13 +141,10 @@ class Engine(object):
                 self.ping.play()
 
     def update(self, delta):
-        new_objects = self.object_manager.update(delta)
         self.entity_manager.update(delta)
-        return new_objects
 
     def draw(self):
         self.renderer.clear()
-        self.object_manager.draw(self.renderer.surface)
         self.renderer.draw(self.entity_manager.entities)
         if self.config.debug:
             for i in self.interaction_manager.interactions[-3:]:

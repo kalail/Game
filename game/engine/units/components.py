@@ -109,8 +109,14 @@ class Renderable(object):
 
     """
     def __init__(self, **kwargs):
-        pass
+        if not self.vertices:
+            raise Exception
+        if not self.color:
+            raise Exception
+        super(SimpleRenderable, self).__init__(**kwargs)
 
+    def render(self):
+        return (self.vertices, self.color)
 
 class SimpleRenderable(object):
     """Simple Renderable
