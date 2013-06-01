@@ -1,8 +1,6 @@
 import pygame.locals as pylocals
 import logging
 
-class Interaction(object):
-    pass
 
 # class VectorInteration(Interaction):
 #     pass
@@ -15,27 +13,6 @@ class Interaction(object):
 
 # class Tap(ScalarInteration):
 #     pass
-
-class Drag(Interaction):
-
-    def __init__(self, position=None):
-        self.name = 'drag'
-        self.points = []
-        if position:
-            self.points.append(position)
-
-    def __str__(self):
-        return self.name
-
-class Tap(Interaction):
-
-    def __init__(self, position=None):
-        self.name = 'tap'
-        self.position = position
-
-    def __str__(self):
-        # logging.error('(%s, %s)' % (self.position[0], self.position[1]))
-        return self.name
 
 class MouseInput(object):
     
@@ -135,8 +112,6 @@ class Interaction(object):
 
     def _create_random_key(self):
         return os.urandom(16).encode('hex')
-
-
 
 class InteractionManager(object):
 

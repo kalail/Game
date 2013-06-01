@@ -14,3 +14,11 @@ class Config(object):
         self.framerate = 60
         self.check_bounds = True
         self.debug = True
+
+    def save(self):
+        """Save
+        
+        Saves the configuration options to disk.
+
+        """
+        pass

@@ -2,6 +2,12 @@ import pygame
 import pygame.locals as pylocals
 import logging
 
+class PlatformAbstractionLayer(object):
+    """Platform Abstraction Layer
+    """
+    pass
+
+
 class PygameAdapter(object):
     """Pygame Adapter
 
@@ -29,6 +35,15 @@ class PygameAdapter(object):
 
     def get_pointer_position(self):
         return pygame.mouse.get_pos()
+
+    def load_image(self, asset):
+        try:
+            image = pygame.image.load(asset).convert_alpha()
+        except pygame.error as error:
+                logging.error('Cannot load image: %s' % error)
+                # raise IOError()
+        else:
+            return image
 
     def load_sound(self, asset):
         return pygame.mixer.Sound(asset)

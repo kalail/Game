@@ -1,54 +1,96 @@
 import pygame
 import theme
-from .base import Thing, GameObject
+from engine.units import GameObject
 import Queue
 import helpers
+from helpers.timer import Timer
 import random
 import logging
+import os
+import math
+from engine.units import Entity
+from engine.units.components import EntityLink, Movable, Rotatable, SimpleRenderable
+from engine.object_manager import BuildOrder
+import units
 
 
-class Pulse(Thing):
+class Test(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
+    """Test
+
+    Initial test entity.
+
+    """
+    name = 'The First One'
+
+    vertices = [
+        (-5, -5),
+        (5, -5),
+        (5, 5),
+        (-5, 5),
+    ]
+    
+    color = theme.red,
+    count = 0
+
+    def update(self, delta):
+        # super(Test, self).update(delta)
+        target_pos = self.link.get_target()
+        d = helpers.get_direction(self.position, target_pos)
+        self.move(d)
+        self.face(target_pos)
+        self.count += 1
+        if self.count > 30:
+            self.count = 0
+            return [BuildOrder(units.Bullet, position=self.position, target=target_pos)]
+
+
+class Bullet(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
+    name = 'Bullet'
+    
+    vertices = [
+        (-1, -10),
+        (1, -10),
+        (1, 10),
+        (-1, 10),
+    ]
+    
+    color = theme.blue,
+
+    speed = 10
+
+    def __init__(self, target, **kwargs):
+        super(Bullet, self).__init__(**kwargs)
+        self.face(target)
+
+    def update(self, delta):
+        dist = [self.speed * o for o in self.orientation]
+        self.move(dist)
+
+
+class Pulse(GameObject):
     """Pulse
 
     Shot by a pulse rilfe
 
     """
-    def __init__(self, direction, color=theme.black, *args, **kwargs):
-        super(Pulse, self).__init__(*args, **kwargs)
-        self.length = 8
-        self.color = color
-        self.speed = 1200.0
+    speed = 1200.0
+
+    def __init__(self, position, direction):
+        super(Pulse, self).__init__('assets/pulse.png', position)
         self.direction = direction
-        self._length_half = self.length / 2.0
+        angle = (180.0/math.pi) * (math.atan((direction[0]/direction[1])))
+        self.image = pygame.transform.rotate(self.image, angle)
 
     def update(self, delta, **kwargs):
         dist = self.speed * delta
         dist_x = self.direction[0] * dist
         dist_y = self.direction[1] * dist
         self.move(dist_x, dist_y)
-
-    def draw(self, screen):
-        line_start_x = self.position[0] - self.direction[0] * self.length
-        line_start_y = self.position[1] - self.direction[1] * self.length
-        line_end_x = self.position[0] + self.direction[0] * self.length
-        line_end_y = self.position[1] + self.direction[1] * self.length
-        pygame.draw.line(screen, self.color, (line_start_x, line_start_y), (line_end_x, line_end_y))
+        return []
 
     def __str__(self):
         return 'Pulse'
-
-
-class Pointer(GameObject):
-
-    def __init__(self, adapter, position=(0,0)):
-        super(Pointer, self).__init__('assets/cursor.png', position)
-        # self.scale(30)
-        self.adapter = adapter
-
-    def update(self, delta):
-        new_position = self.adapter.get_pointer_position()
-        self.move(new_position[0]-self.position[0], new_position[1]-self.position[1])
-        return []
+        
 
 class Bot(GameObject):
     """Bot
@@ -56,43 +98,44 @@ class Bot(GameObject):
     Basic tier 1 unit.
 
     """
+
+    fire_rate = 3.0
+    fire_dist = 20
+    movement_speed = 60.0 
+
     def __init__(self, position):
         super(Bot, self).__init__('assets/circle.png', position)
-        self.speed = 60.0
-        self.fire_rate = 3.0
-        self._fire_delay = 1.0 / self.fire_rate
-        self._fire_timer = 0.0
-        self._firing = False
-        # _random_aim = lambda: -30.0 + random.random()*60.0
-        # self.aim = None
+        self._fire_timer = Timer(Bot.fire_rate)
 
     def _fire(self, position):
         diff_x = position[0] - self.position[0]
         diff_y = position[1] - self.position[1]
         aim = helpers.normalize((diff_x, diff_y))
-        return Pulse(direction=aim, position=self.position)
-
+        l = Bot.fire_dist
+        fire_pos = (self.position[0] + aim[0] * l, self.position[1] + aim[1] * l)
+        return Pulse(position=fire_pos, direction=aim)
+    
     def fire(self, position):
-        if self._fire_timer >= self._fire_delay:
-            self._fire_timer = 0.0
+        if self._fire_timer.check():
+            self._fire_timer.reset()
             return self._fire(position)
-
+        return []
 
     def update(self, delta, **kwargs):
-        dist = self.speed * delta
+        self._fire_timer.update(delta)
+        dist = Bot.movement_speed * delta
         self.move(dist, 0)
-        # targets = self.check_for_targets(kwargs['command_link'])
-        if self._fire_timer < self._fire_delay:
-            self._fire_timer += delta
-        # if targets:
-        #     target = random.choice(targets)
-        #     shot = self.fire(target)
-        #     if shot:
-        #         return [shot]
+        targets = [(400, 400), (200, 200), (300, 300)]
+        if targets:
+            target = random.choice(targets)
+            shot = self.fire(target)
+        if shot:
+            return [shot]
         return []
 
     def __str__(self):
         return 'Bot'
+
 
 
 class Home(GameObject):

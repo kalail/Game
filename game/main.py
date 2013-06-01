@@ -2,6 +2,7 @@ import config
 import engine
 import engine.adapters
 import logging
+from levels import TestLevel
 
 
 def main():
@@ -15,7 +16,8 @@ def main():
     # Choose adapter
     adapter = engine.adapters.PygameAdapter
     # Start engine
-    e = engine.Engine(c, adapter)
+    l = TestLevel()
+    e = engine.Engine(l, c, adapter)
     # Run engine
     e.start()
 
