@@ -15,3 +15,5 @@ cyan = Color(0, 255, 255)
 
 white = Color(255, 255, 255)
 black = Color(0, 0, 0)
+
+clear = (1.0, 1.0, 1.0, 0.0)

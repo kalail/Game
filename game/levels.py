@@ -13,16 +13,16 @@ class TestLevel(object):
 
     def start(self):
         starting_units = [
-            units.Bot((0, 0)),
-            units.Bot((10, 50)),
-            units.Bot((50, 80))
+        #     units.Bot((0, 0)),
+        #     units.Bot((10, 50)),
+        #     units.Bot((50, 80))
         ]
         return starting_units
 
     def starting_order(self):
         starting_units = [
-            BuildOrder(units.Test, position=(80, 120)),
-            BuildOrder(units.Bullet, position=(80, 120), target=(300, 300)),
+            # BuildOrder(units.Test, position=(80, 120)),
+            # BuildOrder(units.Bullet, position=(80, 120), target=(300, 300)),
 
         ]
         return starting_units

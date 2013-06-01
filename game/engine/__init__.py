@@ -10,7 +10,7 @@ import logging
 import PAL
 from .managers import InteractionManager, ObjectManager, AssetManager, EventManager, EntityManager
 
-from .renderer import Renderer
+from .renderer import OpenGLRenderer as Renderer
 
 class Pointer(GameObject):
 
@@ -35,7 +35,7 @@ class Engine(object):
         PAL.init()
         # Setup engine for level
         self.config = config
-        self.renderer = Renderer(config.resolution, config.fullscreen, theme.white)
+        self.renderer = Renderer(config.resolution, config.fullscreen, theme.clear)
         self.level = level
         self.level_queue = []
         # Set timeout
@@ -68,7 +68,7 @@ class Engine(object):
         self.ping = self.asset_manager.get('assets/beep.ogg')
         music.play()
         self.pointer = Pointer()
-        self.object_manager.add_multiple(self.level.start() + [self.pointer])
+        self.object_manager.add_multiple(self.level.start())
         self.entity_manager.build_multiple(self.level.starting_order())
         self.run()
 
