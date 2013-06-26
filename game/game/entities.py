@@ -1,17 +1,16 @@
 import pygame
-import theme
-from engine.units import GameObject
+from engine import colors
+from engine.entities import GameObject
 import Queue
 import helpers
 from helpers.timer import Timer
 import random
-import logging
-import os
+# import logging
+# import os
 import math
-from engine.units import Entity
-from engine.units.components import EntityLink, Movable, Rotatable, SimpleRenderable
+from engine.entities import Entity
+from engine.entities.components import EntityLink, Movable, Rotatable, SimpleRenderable
 from engine.object_manager import BuildOrder
-import units
 
 
 class Test(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
@@ -29,7 +28,7 @@ class Test(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
         (-5, 5),
     ]
     
-    color = theme.red,
+    color = colors.red,
     count = 0
 
     def update(self, delta):
@@ -41,7 +40,7 @@ class Test(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
         self.count += 1
         if self.count > 30:
             self.count = 0
-            return [BuildOrder(units.Bullet, position=self.position, target=target_pos)]
+            return [BuildOrder(Bullet, position=self.position, target=target_pos)]
 
 
 class Bullet(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
@@ -54,7 +53,7 @@ class Bullet(Entity, EntityLink, Movable, Rotatable, SimpleRenderable):
         (-1, 10),
     ]
     
-    color = theme.blue,
+    color = colors.blue,
 
     speed = 10
 
@@ -144,7 +143,7 @@ class Home(GameObject):
     Home base for a player that creates list of units periodically.
 
     """
-    def __init__(self, side='left', color=theme.red, rate=1, build_queue=[], *args, **kwargs):
+    def __init__(self, side='left', color=colors.red, rate=1, build_queue=[], *args, **kwargs):
         # super(Home, self).__init__(*args, **kwargs)
         self.side = side
         self.color = color

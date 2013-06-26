@@ -1,10 +1,10 @@
-import config
-import engine
-import engine.adapters
+import json
 import logging
-from levels import TestLevel
+import engine
+from game import TestGame
+# from numba import autojit
 
-
+# @autojit
 def main():
     # Setup simple logging
     logging.basicConfig(
@@ -12,14 +12,13 @@ def main():
         level=logging.INFO
     )
     # Get config
-    c = config.Config()
-    # Choose adapter
-    adapter = engine.adapters.PygameAdapter
+    with open('config.json') as config_file:
+        config = json.load(config_file)
     # Start engine
-    l = TestLevel()
-    e = engine.Engine(l, c, adapter)
+    game_cls = TestGame
+    eng = engine.Engine(config, game_cls)
     # Run engine
-    e.start()
+    eng.start()
 
 if __name__ == '__main__':
     main()

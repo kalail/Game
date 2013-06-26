@@ -1,0 +1,8 @@
+{
+    "title": "Game",
+    "fullscreen": false,
+    "resolution": [640, 360],
+    "framerate": 60,
+    "check_bounds": true,
+    "debug": true
+}

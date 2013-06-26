@@ -1,6 +1,6 @@
 from pygame.sprite import Group
 import PAL
-import units.components as components
+import entities.components as components
 
 class ObjectManager(Group):
     """Object Manager

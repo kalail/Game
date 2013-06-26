@@ -1,8 +1,8 @@
 import PAL
 import pygame
-import theme
-from .units import GameObject, Entity
-import units.components as components
+# import theme
+# from .entities import GameObject, Entity
+import entities.components as components
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -16,23 +16,23 @@ import numpy
 
 def create_object(shader, vertices):
     # Create a new VAO (Vertex Array Object) and bind it
-    vertex_array_object = GL.glGenVertexArrays(1)
-    GL.glBindVertexArray( vertex_array_object )
+    vertex_array_object = glGenVertexArrays(1)
+    glBindVertexArray(vertex_array_object)
     # Generate buffers to hold our vertices
-    vertex_buffer = GL.glGenBuffers(1)
-    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertex_buffer)
-    # Get the position of the 'position' in parameter of our shader and bind it.
-    position = GL.glGetAttribLocation(shader, 'position')
-    GL.glEnableVertexAttribArray(position)
+    vertex_buffer = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
+    # Get the position of the 'position' parameter of our shader and bind it.
+    i_position = glGetAttribLocation(shader, 'position')
+    glEnableVertexAttribArray(i_position)
     # Describe the position data layout in the buffer
-    GL.glVertexAttribPointer(position, 4, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
+    glVertexAttribPointer(i_position, 4, GL_FLOAT, False, 0, ctypes.c_void_p(0))
     # Send the data over to the buffer
-    GL.glBufferData(GL.GL_ARRAY_BUFFER, 48, vertices, GL.GL_STATIC_DRAW)
+    glBufferData(GL_ARRAY_BUFFER, 48, vertices, GL_STATIC_DRAW)
     # Unbind the VAO first (Important)
     GL.glBindVertexArray( 0 )
     # Unbind other stuff
-    GL.glDisableVertexAttribArray(position)
-    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+    glDisableVertexAttribArray(i_position)
+    glBindBuffer(GL_ARRAY_BUFFER, 0)
     return vertex_array_object
 
 class OpenGLRenderer(object):
@@ -41,24 +41,30 @@ class OpenGLRenderer(object):
     Handles all rendering capabilities.
 
     """
-
-    world_resolution = (640.0, 360.0)
     
     @staticmethod
-    def get_world_aspect():
-        return OpenGLRenderer.world_resolution[0] / OpenGLRenderer.world_resolution[1]
+    def to_engine((x, y)):
+        w = self.viewport_size[0] * 2.0
+        h = self.viewport_size[1] * 2.0
+        _x = self.engine.level.size[0]/2.0 + (x  * self.engine.level.size[0]/2.0)
+        _y = self.engine.level.size[1]/2.0 + (x  * self.engine.level.size[1]/2.0)
+        return (_x, _y)
 
     @staticmethod
-    def match_aspect((width, height)):
-        if (width, height) == OpenGLRenderer.world_resolution:
-            return (width, height)
-        if width > OpenGLRenderer.world_resolution[0]:
-            width = OpenGLRenderer.world_resolution[0]
-            height = width / OpenGLRenderer.get_world_aspect()
-        if height > OpenGLRenderer.world_resolution[1]:
-            height = OpenGLRenderer.world_resolution[1]
-            width =  height * OpenGLRenderer.get_world_aspect()
-        return (int(width), int(height))
+    def to_renderer((x, y)):
+        _x = (x - self.engine.level.size[0]/2.0) / (self.engine.level.size[0]/2.0) * self.viewport_size[0]
+        _y = (self.engine.level.size[1]/2.0 - y) / (self.engine.level.size[1]/2.0) * self.viewport_size[1]
+        return (_x, _y)
+
+    @staticmethod
+    def match_aspect((i_width, i_height), (width, height)):
+        aspect = float(width) / height
+        i_aspect = float(i_width) / i_height
+        if i_aspect > aspect:
+            i_width = i_height * aspect
+        elif i_aspect < aspect:
+            i_height = i_width / aspect
+        return (int(i_width), int(i_height))
 
     vertex_shader = """
     #version 330
@@ -75,37 +81,40 @@ class OpenGLRenderer(object):
 
     void main()
     {
-        gl_FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        gl_FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
     }
     """
 
-    def __init__(self, resolution, fullscreen, clear_color):
-        self.clear_color = clear_color
-        self.fullscreen = fullscreen
+    def __init__(self, engine):
+        self.engine = engine
+        config = engine.config
+        self.clear_color = engine.level.theme['clear']
+        self.fullscreen = config['fullscreen']
         # Match and save resolution
-        self.resolution = OpenGLRenderer.match_aspect(resolution)
-        self.width = self.resolution[0]
-        self.height = self.resolution[1]
-        self.scale_factor = self.resolution[0] / OpenGLRenderer.world_resolution[0]
+        self.resolution = OpenGLRenderer.match_aspect(config['resolution'], engine.level.size)
+        self.scale_factor = self.resolution[0] / engine.level.size[0]
 
     def start(self):
         self.surface = PAL.create_surface(self.resolution, self.fullscreen)
         glClearColor(*self.clear_color)
         self.resize()
         # Compile shaders
-        self.shader = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(OpenGLRenderer.vertex_shader, GL.GL_VERTEX_SHADER),
-            OpenGL.GL.shaders.compileShader(OpenGLRenderer.fragment_shader, GL.GL_FRAGMENT_SHADER)
+        
+        self.vertices = numpy.array(
+            [
+                -0.1, -0.1, 0.0, 1.0,
+                0.1, -0.1, 0.0, 1.0,
+                0.1, 0.1, 0.0, 1.0,
+                -0.1, 0.1, 0.0, 1.0
+            ],
+            dtype=numpy.float32
         )
-        vertices = [
-            0.6, 0.6, 0.0, 1.0,
-            -0.6, 0.6, 0.0, 1.0,
-            0.0, -0.6, 0.0, 1.0
-        ]
 
-        vertices = numpy.array(vertices, dtype=numpy.float32)
-        self.vertex_array_object = create_object(self.shader, vertices)
-
+    def compile_program(self):
+        self.shader = GL.shaders.compileProgram(
+            GL.shaders.compileShader(self.engine.asset_manager.get('shaders/basic.v.glsl'), GL_VERTEX_SHADER),
+            GL.shaders.compileShader(self.engine.asset_manager.get('shaders/basic.f.glsl'), GL_FRAGMENT_SHADER)
+        )
 
     def resize(self):
         # Resize viewport
@@ -128,6 +137,7 @@ class OpenGLRenderer(object):
             bottom = -1.0 / aspect
             top    =  1.0 / aspect
         gluOrtho2D(left, right, bottom, top)
+        self.viewport_size = (right, top)
         # Reset to modelview
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
@@ -137,16 +147,19 @@ class OpenGLRenderer(object):
             if isinstance(e, components.Renderable):
                 pass
             elif isinstance(e, components.SimpleRenderable):
-                if isinstance(e, components.Rotatable):
-                    offset_vertices = [(v[0] + e.position[0], v[1] + e.position[1]) for v in e.rotated_vertices]
-                else:
-                    offset_vertices = [(v[0] + e.position[0], v[1] + e.position[1]) for v in e.vertices]
-                pygame.draw.aalines(self.surface, e.color, True, offset_vertices, 3)
-        
+                    e.draw()
+                # if isinstance(e, components.Rotatable):
+                    # offset_vertices = [(v[0] + e.position[0], v[1] + e.position[1]) for v in e.rotated_vertices]
+                # else:
+                    # offset_vertices = [(v[0] + e.position[0], v[1] + e.position[1]) for v in e.vertices]
+                # pygame.draw.aalines(self.surface, e.color, True, offset_vertices, 3)
+
+        self.vertices += (PAL.get_pointer_position()[1]/720.0 - 0.5) * 0.001
+        vertex_array_object = create_object(self.shader, self.vertices)
         GL.glUseProgram(self.shader)
-        GL.glBindVertexArray(self.vertex_array_object)
+        GL.glBindVertexArray(vertex_array_object)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
-        GL.glBindVertexArray( 0 )
+        GL.glBindVertexArray(0)
         GL.glUseProgram(0)
 
 
@@ -156,7 +169,8 @@ class OpenGLRenderer(object):
         glVertex(0,1);
         # glColor(0, 0, 255);
         glColor(0, 255, 0);
-        glVertex(1, 0);
+        vertices = self.to_renderer(PAL.get_pointer_position())
+        glVertex(*vertices)
         glEnd();
 
     def clear(self):

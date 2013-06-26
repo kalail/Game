@@ -1,26 +1,23 @@
 import pygame
-from .units import GameObject, Entity
-import units.components as components
+import collections
+import entities.components as components
 import pygame.locals as pylocals
-import theme
 import sys
-import time
-import Queue
-import logging
+# import time
 import PAL
 from .managers import InteractionManager, AssetManager, EventManager, EntityManager
-
 from .renderer import OpenGLRenderer as Renderer
 
-class Pointer(GameObject):
 
-    def __init__(self, position=(0,0)):
-        super(Pointer, self).__init__('assets/cursor.png', position)
+# class Pointer(GameObject):
 
-    def update(self, delta):
-        new_position = PAL.get_pointer_position()
-        self.move(new_position[0]-self.position[0], new_position[1]-self.position[1])
-        return []
+#     def __init__(self, position=(0,0)):
+#         super(Pointer, self).__init__('assets/cursor.png', position)
+
+#     def update(self, delta):
+#         new_position = PAL.get_pointer_position()
+#         self.move(new_position[0]-self.position[0], new_position[1]-self.position[1])
+#         return []
 
 
 class Engine(object):
@@ -29,26 +26,25 @@ class Engine(object):
     Game engine that runs levels. Takes a configuration too.
 
     """
-    def __init__(self, level, config, adapter_class):
+    def __init__(self, config, game_cls):
         """Setup engine components according to provided configuration and platform."""
+        # Save inputs
+        self.config = config
+        self.game = game_cls()
+        self.levels = collections.deque(self.game.levels)
+        # Create first level
+        level_cls = self.levels.popleft()
+        self.level = level_cls()
         # Initialize Platform Abstracion Layer
         PAL.init()
         # Setup engine for level
-        self.config = config
-        self.renderer = Renderer(config.resolution, config.fullscreen, theme.clear)
-        self.level = level
-        self.level_queue = []
-        # Set timeout
-        self.timer = PAL.get_clock()
-        # objects = [units.Home(side='left', color=theme.red, rate=10, build_queue=[units.Bot for i in xrange(100)])]
+        self.asset_manager = AssetManager(self.game.assets)
         self.entity_manager = EntityManager()
+        self.renderer = Renderer(self)
         self.interaction_manager = InteractionManager()
-        self.asset_manager = AssetManager(self.level.assets)
         self.event_manager = EventManager()
-        # self._num_fps_avg = 5
-        # self._frame_times = Queue.Queue(self._num_fps_avg)
-        # [self._frame_times.put(0) for i in xrange(self._num_fps_avg)]
-        # self.target = (500, 200)
+        # Set timer
+        self.game_timer = PAL.get_clock()
 
     def start(self):
         """Load level assets and start the main loop."""
@@ -64,10 +60,11 @@ class Engine(object):
         # self.assets.
         self.asset_manager.load()
         self.renderer.start()
+        self.renderer.compile_program()
         music = self.asset_manager.get('assets/ThisUsedToBeACity.ogg')
         self.ping = self.asset_manager.get('assets/beep.ogg')
         music.play()
-        self.pointer = Pointer()
+        # self.pointer = Pointer()
         self.entity_manager.build_multiple(self.level.starting_order())
         self.run()
 
@@ -103,7 +100,7 @@ class Engine(object):
             # total = end - first
             # logging.debug('Rendered frame in: %ss\n' % (end - start))
             # Get ticks
-            delta_millis = self.timer.tick(self.config.framerate)
+            delta_millis = self.game_timer.tick(self.config.framerate)
             delta = float(delta_millis) / 1000.0
             # slept = delta - total
             # Calculate fps

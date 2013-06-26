@@ -1,4 +1,4 @@
-Game
-====
+Action RTS Game
+===============
 
-My side project Action RTS game.
+My action RTS game.

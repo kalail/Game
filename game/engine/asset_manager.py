@@ -17,6 +17,10 @@ class AssetManager(object):
             'jpg',
             'jpeg',
             'png',
+        ],
+        'shader':[
+            'v.glsl',
+            'f.glsl',
         ]
     }
 
@@ -58,11 +62,14 @@ class AssetManager(object):
         """Load assets saved in asset list. Checks for duplicates and allowed extensions."""
         for order in self.manifest:
             cat = order[1]
-            path = order[0]
+            path = 'game/assets/{0}'.format(order[0])
             if cat == 'image':
                 asset = PAL.load_image(path)
             elif cat == 'audio':
                 asset = PAL.load_sound(path)
+            elif cat == 'shader':
+                with open(path, 'r') as asset_f:
+                    asset = asset_f.read()
             else:
                 raise Exception('Unsupported asset type.')
             self.assets[path] = asset

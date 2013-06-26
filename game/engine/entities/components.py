@@ -2,7 +2,13 @@
 import pygame
 import math
 import helpers
+from .. import PAL
 
+from OpenGL.GL import *
+from OpenGL.GLU import *
+import OpenGL.GL as GL
+import OpenGL.GL.shaders
+import OpenGL
 
 class Movable(object):
     """Movable
@@ -102,6 +108,43 @@ class EntityLink(object):
         super(EntityLink, self).__init__(**kwargs)
 
 
+class Timered(object):
+    """Timered
+
+    Can create timered function calls.
+
+    Needs:
+
+
+    """
+    def __init__(self, **kwargs):
+        self.timers = {}
+        self.callbacks = {}
+        super(Timered, self).__init__(**kwargs)
+
+    def run_at(self, method, freq):
+        # Calculate period
+        period = 1.0/freq
+        # Create timer
+        count = self.timers.get(period, None)
+        if count == None:
+            self.timers[period] = 0.0
+        # Set callback
+        callbacks = self.callbacks.get(period, None)
+        if not callbacks:
+            self.callbacks[period] = []
+        self.callbacks.append(method)
+
+    def update(self, delta):
+        # Update timers and run callbacks
+        for period in (self.timers):
+            self.timers[period] += delta
+            if self.timers[period] >= period:
+                for method in self.callbacks[period]:
+                    method()
+                self.timers[period] = 0.0
+
+
 class Renderable(object):
     """Renderable
 
@@ -129,6 +172,7 @@ class SimpleRenderable(object):
         color
     
     """
+
     def __init__(self, **kwargs):
         if not self.vertices:
             raise Exception
@@ -137,7 +181,14 @@ class SimpleRenderable(object):
         super(SimpleRenderable, self).__init__(**kwargs)
 
     def render(self):
-        return (self.vertices, self.color)
+        color = self.color
+        glBegin(GL_TRIANGLES)
+        glColor(*color)
+        # for vertex in
+        glVertex(0, 0)
+        glVertex(0, 1)
+        glVertex(1, 0)
+        glEnd()
 
 # class Renderable(Sprite):
 #     """Renderable
